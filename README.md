@@ -167,7 +167,7 @@ User Query → Cache Lookup → HIT: return cached answer
 
 ### 🛡️ Aegis Integration
 
-[Aegis](https://github.com/n3utr7no) is a modular LLM security framework with four core modules that can be integrated into the RAG pipeline:
+[Aegis](https://github.com/n3utr7no/aegis) is a modular LLM security framework with four core modules that can be integrated into the RAG pipeline:
 
 | Aegis Module | Integration Point | Purpose |
 |---|---|---|
