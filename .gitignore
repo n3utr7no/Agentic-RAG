@@ -1,9 +1,6 @@
 # Environment
 .env
 
-# Database
-lancedb_data/
-
 # Python
 __pycache__/
 *.pyc
