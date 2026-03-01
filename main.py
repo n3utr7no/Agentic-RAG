@@ -9,34 +9,39 @@ load_dotenv()
 agent = Agent(
     'gateway/groq:llama-3.3-70b-versatile',
     deps_type=AgentState,
-    system_prompt=SYSTEM_PROMPT
+    system_prompt=SYSTEM_PROMPT,
+    retries=2,
 )
 
 @agent.tool
-def research(ctx: RunContext[AgentState], query: str) -> str:
-    """Performs full RAG research: retrieves local docs, searches the web, grades the combined result, and re-searches if needed."""
+def research(ctx: RunContext[AgentState], query: str, use_knowledge_base: bool = True) -> str:
+    """Performs research for a query. Set use_knowledge_base to True for topics in the knowledge base (LLM security, agent patterns, RAG), or False for general queries (current events, general knowledge)."""
 
-    # 1. Retrieve from local vector store
-    docs = retrieve_node(query)
-    ctx.deps.documents.extend(docs)
+    if use_knowledge_base:
+        # Full RAG pipeline: retrieve + search + grade
+        docs = retrieve_node(query)
+        ctx.deps.documents.extend(docs)
 
-    # 2. Search the web
-    web_results = search_node(query)
-    ctx.deps.documents.extend(web_results)
+        web_results = search_node(query)
+        ctx.deps.documents.extend(web_results)
 
-    # 3. Combine context
-    all_context = docs + web_results
-    combined = "\n\n".join(all_context) if all_context else ""
+        all_context = docs + web_results
+        combined = "\n\n".join(all_context) if all_context else ""
 
-    # 4. Grade — if not good enough, do another round of web search
-    relevance = router_node(query=query, answer=combined)
-    if relevance.is_not_relevant:
-        extra_results = search_node(query)
-        ctx.deps.documents.extend(extra_results)
-        all_context.extend(extra_results)
-        combined = "\n\n".join(all_context)
+        relevance = router_node(query=query, answer=combined)
+        if relevance.is_not_relevant:
+            extra_results = search_node(query)
+            ctx.deps.documents.extend(extra_results)
+            all_context.extend(extra_results)
+            combined = "\n\n".join(all_context)
 
-    return combined if combined else "No relevant information found."
+        return combined if combined else "No relevant information found."
+    else:
+        # Web-only search
+        print('----Web searching----')
+        results = search_node(query)
+        ctx.deps.documents.extend(results)
+        return "\n\n".join(results) if results else "No results found."
 
 if __name__ == "__main__":
     current_state = AgentState(documents=[])
